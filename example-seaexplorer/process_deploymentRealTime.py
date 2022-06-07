@@ -15,29 +15,28 @@ profiledir = './L0-profiles/'
 griddir    = './L0-gridfiles/'
 plottingyaml = './plottingconfig.yml'
 
-## get the data and clean up derived
-#os.system('source synctodfo.sh')
-if 0:
+# get the data from where it is pushed by Alseamar.  Contact them to set this
+# up...
+if False:
     os.system('rsync -av ' + sourcedir + ' ' + rawdir)
 
 # clean last processing...
 os.system('rm ' + rawncdir + '* ' + l0tsdir + '* ' + profiledir + '* ' +
           griddir + '* ')
 
+# turn *.EBD and *.DBD into *.ebd.nc and *.dbd.nc netcdf files:
+seaexplorer.raw_to_rawnc(rawdir, rawncdir, deploymentyaml)
 
-if 1:
-    # turn *.EBD and *.DBD into *.ebd.nc and *.dbd.nc netcdf files.
-    seaexplorer.raw_to_rawnc(rawdir, rawncdir, deploymentyaml)
-        # merge individual neetcdf files into single netcdf files *.ebd.nc and *.dbd.nc
-    seaexplorer.merge_rawnc(rawncdir, rawncdir, deploymentyaml, kind='sub')
+# merge individual netcdf files into single netcdf files *.ebd.nc and *.dbd.nc:
+seaexplorer.merge_rawnc(rawncdir, rawncdir, deploymentyaml, kind='sub')
 
-        # Make level-1 timeseries netcdf file from th raw files...
-    outname = seaexplorer.raw_to_timeseries(rawncdir, l0tsdir, deploymentyaml, kind='sub')
-    ncprocess.extract_timeseries_profiles(outname, profiledir, deploymentyaml)
-    outname2 = ncprocess.make_gridfiles(outname, griddir, deploymentyaml)
+# Make timeseries netcdf file from th raw files:
+outname = seaexplorer.raw_to_timeseries(rawncdir, l0tsdir, deploymentyaml, kind='sub')
 
-if 1:
-    # make profile netcdf files for ioos gdac...
-    # make grid of dataset....
-    pgplot.timeseries_plots(outname, plottingyaml)
-    pgplot.grid_plots(outname2, plottingyaml)
+# write time series as a collection of individual profiles:
+ncprocess.extract_timeseries_profiles(outname, profiledir, deploymentyaml)
+
+# make depth-profile grid
+gridname = ncprocess.make_gridfiles(outname, griddir, deploymentyaml)
+
+pgplot.grid_plots(grid, plottingyaml)

@@ -23,30 +23,34 @@ glidersuffix = 'sbd'
 # only do this for a real run, or something like this
 real = False
 if real:
+    # get the data from webbresearch (contact them for permission)
     os.system('rsync -av cproof@sfmc.webbresearch.com:/var/opt/sfmc-dockserver/stations/dfo/gliders/ ~/gliderdata/slocum_dockserver/')
+    # copy data we need to binarydir.
     os.system('rsync -av ~/gliderdata/slocum_dockserver/rosie_713/from-glider/* ' + binarydir)
 
-os.system('rm ' + rawdir + 'dfo* ' + rawdir + 'TEMP*.nc ' + l1tsdir + '* ' + profiledir + '* ' +
-          griddir + '* ')
+# clean up old files:
+os.system('rm ' + rawdir + 'dfo* ' + rawdir + 'TEMP*.nc ' + l1tsdir + '* ' +
+          profiledir + '* ' + griddir + '* ')
 
-print(scisuffix)
 # turn *.EBD and *.DBD into *.ebd.nc and *.dbd.nc netcdf files.
-if 1:
-    slocum.binary_to_rawnc(binarydir, rawdir, cacdir, sensorlist, deploymentyaml,
-        incremental=True, scisuffix=scisuffix, glidersuffix=glidersuffix)
+slocum.binary_to_rawnc(
+    binarydir, rawdir, cacdir, sensorlist, deploymentyaml,
+    incremental=True, scisuffix=scisuffix, glidersuffix=glidersuffix)
 
-# merge individual neetcdf files into single netcdf files *.ebd.nc and *.dbd.nc
-    slocum.merge_rawnc(rawdir, rawdir, deploymentyaml,
-        scisuffix=scisuffix, glidersuffix=glidersuffix)
-if 1:
-    # Make level-1 timeseries netcdf file from th raw files...
-    outname = slocum.raw_to_timeseries(rawdir, l1tsdir, deploymentyaml,
-              profile_filt_time=100, profile_min_time=300)
-    # make profile netcdf files for ioos gdac...
-    ncprocess.extract_timeseries_profiles(outname, profiledir, deploymentyaml)
+# merge individual netcdf files into single netcdf files *.ebd.nc and *.dbd.nc
+slocum.merge_rawnc(
+    rawdir, rawdir, deploymentyaml,
+    scisuffix=scisuffix, glidersuffix=glidersuffix)
+# Make level-1 timeseries netcdf file from the raw files...
+outname = slocum.raw_to_timeseries(
+    rawdir, l1tsdir, deploymentyaml,
+    profile_filt_time=100, profile_min_time=300)
 
-    # make grid of dataset....
+# make profile netcdf files for ioos gdac...
+ncprocess.extract_timeseries_profiles(outname, profiledir, deploymentyaml)
 
+# make grid of dataset....
+gridname = ncprocess.make_gridfiles(outname, griddir, deploymentyaml)
 
-outname = ncprocess.make_gridfiles(outname, griddir, deploymentyaml)
-pgplot.grid_plots(outname, plottingyaml)
+# plot the gridded dataset.
+pgplot.grid_plots(gridname, plottingyaml)
